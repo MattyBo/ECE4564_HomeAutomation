@@ -54,11 +54,13 @@ def execute_command(command,led):
         print message
 
 ##    return json.dumps({'result':result,'message':message})
-        return json.dumps({'update':{'device_name':led.get_name(), \
-        'state':led.get_state()}})
+    return json.dumps({'update':{'device_name':led.get_name(), \
+    'state':led.get_state()}})
 
 def main():
     try:
+        global led
+        global sock
         # Setup Arparse
         parser = argparse.ArgumentParser(description='Home automation daemon', \
             prefix_chars='-')
@@ -117,8 +119,8 @@ def main():
         try:
             while True:
                 data = sock.recv(4096)
-                reply = execute_command(json.loads(data),led)
-                sock.sendall(reply)
+                result = execute_command(json.loads(data),led)
+                sock.sendall(result)
         except KeyboardInterrupt:
             cleanup()
     except Exception, e:
