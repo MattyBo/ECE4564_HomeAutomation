@@ -14,11 +14,38 @@ import argparse
 import time
 import sys
 import socket
+import json
 from led import LED
 
+num_devices = 0
 led = None
 sock = None
 port = 12345
+
+def cleanup():
+    if led is not None:
+        led.cleanup()
+    if sock is not None:
+        sock.close
+
+def format_registration_message(name):
+    return json.dumps({'id':name, 'devices':{led.get_name():\
+        {'description':led.get_desc(), 'state':led.get_state()}}})
+
+def execute_command(command):
+    result = True
+    message = "All good"
+    if command['device_name'] == led.get_name():
+        if command['state']:
+            led.turn_on()
+        else:
+            led.turn_off()
+    else:
+        result = False
+        message = "I do not have a device named: " + command['device_name']
+        print message
+
+    return json.dumps({'result':result,'message':message})
 
 def main():
     try:
@@ -55,22 +82,33 @@ def main():
             print "Connected to host at " + host
         except socket.error, se:
             print "Problem connecting to host " + se.message
-            print "Closing"
             sys.exit()
 
+        num_devices = raw_input("Enter the number of devices on this pi \
+        (right now this will be 1 no matter what you put):\n")
+        num_devices = 1
+        device_name = raw_input('Enter a name for device' + str(num_devices) + \
+        ':')
+        device_desc = raw_input('Enter a description for device' \
+        + str(num_devices) + ':')
+
         led = LED()
+        led.set_name(device_name)
+        led.set_desc(device_desc)
+
+        sock.sendall(format_registration_message(name))
 
         try:
             while True:
-                time.sleep(100)
+                data = s.recv(4096)
+                reply = execute_command(json.loads(data))
+                sock.sendall(reply)
         except KeyboardInterrupt:
-            led.cleanup()
-            print("closing")
+            cleanup()
     except Exception, e:
         # Unexpected error
         print "Unexpected error occured: " + e.message
-        if led is not None:
-            led.cleanup()
+        cleanup()
 
 if __name__ == '__main__':
     main()
