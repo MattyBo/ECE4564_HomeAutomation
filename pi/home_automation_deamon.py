@@ -28,6 +28,12 @@ def cleanup():
     if sock is not None:
         sock.close
 
+def interpret_response(reply):
+    if reply['result'] == 'True':
+        return True
+    else:
+        return False
+
 def format_registration_message(name):
     return json.dumps({'id':name, 'devices':{led.get_name():\
         {'description':led.get_desc(), 'state':led.get_state()}}})
@@ -45,7 +51,9 @@ def execute_command(command):
         message = "I do not have a device named: " + command['device_name']
         print message
 
-    return json.dumps({'result':result,'message':message})
+##    return json.dumps({'result':result,'message':message})
+        return json.dumps({'update':{'device_name':led.get_name(), \
+        'state':led.get_state()}})
 
 def main():
     try:
@@ -97,10 +105,16 @@ def main():
         led.set_desc(device_desc)
 
         sock.sendall(format_registration_message(name))
+        reply = sock.recv(4096)
+        if interpret_response(json.loads(reply)) == False:
+            print "The server already has a pi with the name " + name + \
+            ". Please remove the pi from the server or try a enter a new name."
+            cleanup()
+            sys.exit()
 
         try:
             while True:
-                data = s.recv(4096)
+                data = sock.recv(4096)
                 reply = execute_command(json.loads(data))
                 sock.sendall(reply)
         except KeyboardInterrupt:

@@ -24,7 +24,7 @@ class LED(object):
             bouncetime=200)
 
         # Let's start with the light on
-        self.state = True
+        self.state = 1
         GPIO.output(25,True)
 
     def led_callback(self,channel):
@@ -34,12 +34,12 @@ class LED(object):
             self.turn_on()
 
     def turn_on(self):
-        self.state = True
+        self.state = 1
         GPIO.output(25,True)
         print("turning light on")
 
     def turn_off(self):
-        self.state= False
+        self.state= 0
         GPIO.output(25,False)
         print("turning light off")
 
