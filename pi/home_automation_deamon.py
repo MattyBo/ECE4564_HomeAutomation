@@ -23,13 +23,15 @@ sock = None
 port = 12345
 
 def cleanup():
+    global led
+    global sock
     if led is not None:
         led.cleanup()
     if sock is not None:
         sock.close
 
 def interpret_response(reply):
-    if reply['result'] == 'True':
+    if reply['result'] == True:
         return True
     else:
         return False
@@ -118,8 +120,6 @@ def main():
                 reply = execute_command(json.loads(data),led)
                 sock.sendall(reply)
         except KeyboardInterrupt:
-            led.cleanup()
-            sock.close()
             cleanup()
     except Exception, e:
         # Unexpected error
