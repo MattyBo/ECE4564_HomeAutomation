@@ -34,11 +34,11 @@ def interpret_response(reply):
     else:
         return False
 
-def format_registration_message(name):
+def format_registration_message(name, led):
     return json.dumps({'id':name, 'devices':{led.get_name():\
         {'description':led.get_desc(), 'state':led.get_state()}}})
 
-def execute_command(command):
+def execute_command(command,led):
     result = True
     message = "All good"
     if command['device_name'] == led.get_name():
@@ -104,7 +104,7 @@ def main():
         led.set_name(device_name)
         led.set_desc(device_desc)
 
-        sock.sendall(format_registration_message(name))
+        sock.sendall(format_registration_message(name,led))
         reply = sock.recv(4096)
         if interpret_response(json.loads(reply)) == False:
             print "The server already has a pi with the name " + name + \
@@ -115,9 +115,11 @@ def main():
         try:
             while True:
                 data = sock.recv(4096)
-                reply = execute_command(json.loads(data))
+                reply = execute_command(json.loads(data),led)
                 sock.sendall(reply)
         except KeyboardInterrupt:
+            led.cleanup()
+            sock.close()
             cleanup()
     except Exception, e:
         # Unexpected error

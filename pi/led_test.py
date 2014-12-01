@@ -22,10 +22,8 @@ def main():
     try:
 
         led = LED()
-        device_name = raw_input('Enter a name for device' + str(num_devices) + \
-        ':')
-        device_desc = raw_input('Enter a description for device' \
-        + str(num_devices) + ':')
+        device_name = raw_input('Enter a name for the led: ')
+        device_desc = raw_input('Enter a description for the led: ')
         led.set_name(device_name)
         led.set_desc(device_desc)
 
