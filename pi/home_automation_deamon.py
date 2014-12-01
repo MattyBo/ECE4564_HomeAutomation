@@ -86,7 +86,7 @@ def main():
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect(host, port)
+            sock.connect((host, port))
             print "Connected to host at " + host
         except socket.error, se:
             print "Problem connecting to host " + se.message
