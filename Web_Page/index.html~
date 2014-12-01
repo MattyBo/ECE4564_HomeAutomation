@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<style>
+table {
+    border: 2px solid black;
+    border-radius: 10px; 
+}
+th {
+    text-align: center;
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.inactive {
+    background-color: LightGray;
+    opacity: 0.4;
+}
+.active {
+    background-color: LightGreen;
+    opacity: 1;
+}
+img.logo {
+    height: 250px;
+    width: 200px;
+}
+img.bulb {
+    height: 100px;
+    width: 100px;
+}
+</style>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+  
+</body>
+</html>
+<script src="Scripts/jquery-2.1.1.min.js"></script>
+<script type="text/javascript">
+var ws = new WebSocket("ws://localhost:9998/");
+
+function updateDevices(device_info, pi_name){
+  var selector = '.bulb.' + pi_name + '[data-device="' + device_info['device_name'] + '"]';
+  console.log(selector);
+  console.log($(selector).attr('src'));
+  $(selector).attr('src',bulbImage(device_info['state']));
+}
+
+function clickBulb(){
+  var src = $(this).attr('src');
+  var state;
+  console.log(src);
+  if(src == "Images/bulb_on.png"){
+    state = 0;
+  }else{
+    state = 1;
+  }
+
+  var classList =$(this).attr('class').split(/\s+/);
+  var pi_name;
+  for(var i = 0; i < classList.length; i++){
+    console.log(classList[i]);
+    if(classList[i] != "bulb"){
+      pi_name = classList[i];
+      break;
+    }
+  }
+
+  var device_name = $(this).attr('data-device');
+
+  var selector = "h2." + device_name;
+
+  var status = $(selector).html;
+
+  if(status == "Status:inactive")
+    return;
+  else{
+    var command = {};
+    command['id'] = pi_name;
+    command['device_name'] = device_name;
+    command['state'] = state;
+    console.log(command);
+    ws.send(JSON.stringify(command));
+  }
+}
+
+function bulbImage(state){
+    var src = Number(state);
+    var state = 1;
+    console.log(state);
+    if(src == 1){
+      src = "Images/bulb_on.png";
+    }else{
+      src = "Images/bulb_off.png";
+    }
+    return src;
+}
+
+function addNewPi(pi_info, pi_name) {
+  var status = pi_info['status'];
+  var statType;
+  if(status == 0){
+    statType = "inactive";
+  }else{
+    statType = "active"; 
+  }
+
+  var logo = '<img src="Images/pi.png" class="logo" alt="Pi Logo">';
+
+  var html = '<table class="' + statType + 
+    ' ' + pi_name + '">';
+  
+  html += '<tr><th><h2>' + pi_name + '</h2></th></tr>';
+  html += '<tr><th>' + logo + '</th></tr>'; 
+  html += '<tr><th><h2 class="' + pi_name + '">Status:' + 
+    statType + '</h2></th></tr>';
+  for(var device in pi_info['devices']){
+    var state = pi_info['devices'][device]['state'];
+    var src = bulbImage(state);
+
+    html+='<tr><th><h2>' + device + '</h2><img src="' +
+          src + '" class="bulb ' + pi_name +'" data-device="' 
+          + device + '"></th></tr>'; 
+  }
+  html += '</table>';
+  console.log(html);
+  $('body').append(html);
+
+}
+  $( function() {
+  /*
+  ws.onopen = function()
+  {
+    // Web Socket is connected, send data using send()
+    ws.send("Message to send");
+    //alert("Message is sent...");
+  };
+  */
+    ws.onmessage = function(evt)
+    {
+      var data = JSON.parse(evt.data);
+
+      if("new" in data){
+        for(var key in data['new']){
+          addNewPi(data['new'][key], key);
+        }
+
+        $('.bulb').click(clickBulb);
+        
+      }else if("update" in data){
+        for(var key in data['update']){
+          console.log("updates");
+          console.log(data);
+          var updates = data['update'][key];
+          if("device_name" in updates){
+            updateDevices(updates, key);
+          }else{
+            console.log("to do");
+          }
+
+        }
+      }else{
+        for(var key in data){
+          addNewPi(data[key], key);
+        }
+        $('.bulb').click(clickBulb);
+        console.log(data);
+      }
+      //console.log(evt.data);
+    };
+    ws.onclose = function()
+    {
+      alert("connection is close");
+    };
+    
+  } );
+/*
+<table class="active" frame="box">
+  <tr><th><h2>Pi Logo</h2></th></tr>
+  <tr><th><img src="Images/pi.png" alt="Pi Logo"></th></tr>
+  <tr><th><button onclick="myFunction()">click me</button><th></tr>
+  </table>
+*/
+</script>
