@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <style>
-body { 
+body.intro { 
 	background-color: maroon;
 }
-h1 {
+h1.intro {
+	text-align: center;
+}
+h2.intro {
 	color: orange;
 }
-h2 {
+h3.intro {
 	color: orange;
 }
-h3 {
+p.intro {
 	color: orange;
 }
-p {
-	color: orange;
+#container{
+    border: 0px;
 }
 table {
     border: 2px solid black;
@@ -49,23 +52,37 @@ img.bulb {
 </style>
 <head>
   <meta charset="UTF-8">
-  <h1>Home Automation Control Center</h1>
-  <h2>ECE4564 Network Application Design Final Project</h2>
-  <h3>Designed by... Jimmy Tobat, Brendan Smith, Matt Bollinger, and Tim Hogarty</h3>
+  <h1 class="ui-widget-header intro">
+  Home Automation Control Center <br>
+  ECE4564 Network Application Design Final Project
+  </h1>
 </head>
 <body>
-<hr></hr>
-<p>This project is designed to allow a user to control the power status (on/off) of simple home appliances via a webpage. 
-The languages used were Python, Javascript, HTML, CSS, and JQuery.ui.</p>
-<p>The connected home appliances will show up below this line. To change the status of an appliance (i.e. on/off) simply click the image
-associated to the appliance. At this point we will only have lights as the example, but the basic idea can be scaled to any device.</p>
-<hr></hr>
-  
+<div id="tabs">
+  <ul>
+    <li><a href="#tabs-1">Pi Controller</a></li>
+    <li><a href="#tabs-2">About Project</a></li>
+  </ul>
+  <div id="tabs-1">
+  <table id="container"></table>
+  </div>
+  <div id="tabs-2">
+  <h3>This project is designed to allow a user to control the power status (on/off) of simple home appliances via a webpage. 
+  The languages used were Python, Javascript, HTML, CSS, and JQuery.ui.</h3>
+  <h3>The connected home appliances will show up below this line. To change the status of an appliance (i.e. on/off) simply click the image
+  associated to the appliance. At this point we will only have lights as the example, but the basic idea can be scaled to any device.</h3>
+  <h3> This project was designed by Jimmy Tobat, Brendan Smith, Matt Bollinger, and Tim Hogarty</3>
+  </div>
+</div>
 </body>
 </html>
+<link href="Style/jquery-ui.min.css" rel="stylesheet">
 <script src="Scripts/jquery-2.1.1.min.js"></script>
+<script src="Scripts/jquery-ui.min.js"></script>
 <script type="text/javascript">
-var ws = new WebSocket("ws://54.174.26.73:9998/");
+var ws = new WebSocket("ws://localhost:9998/");
+var columns = 0;
+var numColumns = 3;
 
 function updateDevices(device_info, pi_name){
   var selector = '.bulb.' + pi_name + '[data-device="' + device_info['device_name'] + '"]';
@@ -125,7 +142,50 @@ function bulbImage(state){
     return src;
 }
 
+function updatePi(pi_info, pi_name) {
+  var name = pi_name.split(' ').join('_');
+  var selector = "table." + name;
+  $( selector ).empty();
+  console.log(selector);
+  var html;
+  var status = pi_info['status'];
+  var logo = '<img src="Images/pi.png" class="logo" alt="Pi Logo">';
+
+  if(status == 0){
+    statType = "inactive";
+  }else{
+    statType = "active"; 
+  }
+
+  if( $( selector ).hasClass('active') ){
+    $( selector ).removeClass('active');
+  }
+
+  if( $( selector ).hasClass('inactive') ){
+    $( selector ).removeClass('inactive');
+  }
+
+  $( selector ).addClass(statType);
+
+  html += '<tr><th><h2>' + pi_name + '</h2></th></tr>';
+  html += '<tr><th>' + logo + '</th></tr>'; 
+  html += '<tr><th><h2 class="' + pi_name + '">Status:' + 
+    statType + '</h2></th></tr>';
+
+  for(var device in pi_info['devices']){
+    var state = pi_info['devices'][device]['state'];
+    var src = bulbImage(state);
+    console.log(device);
+    html+='<tr><th><h2>' + device + '</h2><img src="' +
+          src + '" class="bulb ' + name +'" data-device="' 
+          + device + '"></th></tr>'; 
+  }
+
+  $(selector).append(html);
+}
+
 function addNewPi(pi_info, pi_name) {
+  var name = pi_name.split(' ').join('_');
   var status = pi_info['status'];
   var statType;
   if(status == 0){
@@ -137,26 +197,30 @@ function addNewPi(pi_info, pi_name) {
   var logo = '<img src="Images/pi.png" class="logo" alt="Pi Logo">';
 
   var html = '<table class="' + statType + 
-    ' ' + pi_name + '">';
+    ' ' + name + '">';
   
   html += '<tr><th><h2>' + pi_name + '</h2></th></tr>';
   html += '<tr><th>' + logo + '</th></tr>'; 
-  html += '<tr><th><h2 class="' + pi_name + '">Status:' + 
+  html += '<tr><th><h2 class="' + name + '">Status:' + 
     statType + '</h2></th></tr>';
   for(var device in pi_info['devices']){
     var state = pi_info['devices'][device]['state'];
     var src = bulbImage(state);
 
     html+='<tr><th><h2>' + device + '</h2><img src="' +
-          src + '" class="bulb ' + pi_name +'" data-device="' 
+          src + '" class="bulb ' + name +'" data-device="' 
           + device + '"></th></tr>'; 
   }
-  html += '</table>';
-  console.log(html);
-  $('body').append(html);
 
+  html += '</table>';
+
+  return html;
+
+  //$('body').append(html);
 }
+
   $( function() {
+    $('#tabs').tabs();
   /*
   ws.onopen = function()
   {
@@ -184,22 +248,41 @@ function addNewPi(pi_info, pi_name) {
           if("device_name" in updates){
             updateDevices(updates, key);
           }else{
-            console.log("to do");
+            updatePi(updates, key);
+            $('.bulb').click(clickBulb);
           }
 
         }
       }else{
         for(var key in data){
-          addNewPi(data[key], key);
+          var table = addNewPi(data[key], key);
+          var html = "<td>" + table + "</td>";
+          if(columns == 0){
+            var firstCol = "<tr>" + html + "</tr>";
+            console.log(firstCol);
+            console.log('osito');
+            $('#container').append(firstCol);
+            var txt = $('#container').html();
+            console.log(txt);
+            columns++;
+          }
+          else{
+            console.log(html);
+            console.log("wtf");
+            $('#container td:last').after(html);
+            console.log($('#container').html());
+//append(html);
+          }
+          
+          $('.bulb').click(clickBulb);
         }
-        $('.bulb').click(clickBulb);
         console.log(data);
       }
       //console.log(evt.data);
     };
     ws.onclose = function()
     {
-      alert("connection is close");
+      alert("server connection is closed");
     };
     
   } );

@@ -45,7 +45,7 @@ con = None
 cur = None
 
 try:
-  con = lite.connect('/home/ubuntu/home_auto.db')
+  con = lite.connect('/home/jtobat/active/home_auto.db')
   cur = con.cursor()
 
 except lite.Error, e:
@@ -72,6 +72,8 @@ def pi_status(name, devices, new, state=None, pi_update=False):
     new_message[status][name] = {}
     new_message[status][name]['devices'] = devices
     new_message[status][name]['status'] = state
+    print "updated pi"
+    print new_message
   else:
     new_message[status][name]['device_name'] = devices
     new_message[status][name]['state'] = state
@@ -158,6 +160,10 @@ class QOTD(Protocol):
         print "connect lost"
         print self.name
         pi_system[self.name]['status'] = 0
+        pi_system[self.name]['devices'] = {}
+        update = pi_status(self.name, {}, False, 0, True)
+        print update
+        broadcast(update)
 
     def dataReceived(self, data):
         global pi_system
@@ -235,49 +241,6 @@ class QOTD(Protocol):
 class QOTDFactory(Factory):
     def buildProtocol(self, addr):
         return QOTD()
-"""
-class TownLookupRequestHandler(http.Request):
-
-    def process(self):
-        #print self
-        if self.path == "/findTown":
-            if "zip" in self.args:
-                zips = list()
-                for z in self.args["zip"]:
-                    if z in zip_db:
-                        zips.append(zip_db[z])
-                    else:
-                        zips.append({"zip": z, "error": "Zip code not found"})
-
-                self.setHeader("Content-Type", "application/json")
-                self.write(json.dumps(zips))
-
-            else:
-                self.setResponseCode(http.BAD_REQUEST)
-        else:
-            self.setResponseCode(http.NOT_FOUND)
-
-        self.finish()
-
-class TownLookupProtocol(http.HTTPChannel):
-    requestFactory = TownLookupRequestHandler
-
-class TownLookupServer(http.HTTPFactory):
-    def buildProtocol(self, addr):
-        return TownLookupProtocol()
-
-# Main entry point for the script
-csv_file = open("zbp12totals.txt", "r")
-census_data = csv.DictReader(csv_file)
-zip_db = dict()
-
-# Build a dict that indexes information by zipcode
-for line in census_data:
-    zip_db[line["zip"]] = {"state": line["stabbr"],
-                           "county": line["cty_name"],
-                           "city": line["city"],
-                           "zip": line["zip"]}
-"""
 
 cur.execute("select * from pi")
 
