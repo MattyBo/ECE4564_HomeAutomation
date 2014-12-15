@@ -10,7 +10,7 @@
 #!/usr/bin/env python
 
 import RPi.GPIO as GPIO
-import time
+import signal
 class LED(object):
 
     def __init__(self):
@@ -32,6 +32,7 @@ class LED(object):
             self.turn_off()
         else:
             self.turn_on()
+        signal.alarm(1)
 
     def turn_on(self):
         self.state = 1

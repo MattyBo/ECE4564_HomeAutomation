@@ -9,7 +9,7 @@
 #!/usr/bin/env python
 
 import argparse
-import time
+import signal
 import sys
 import socket
 from led import LED
@@ -18,8 +18,16 @@ led = None
 sock = None
 port = 12345
 
+def sig_caught(signal, frame):
+    print "Caught signal. The LED status has changed"
+
 def main():
     try:
+        # Setup signal handlers
+        try:
+            signal.signal(signal.SIGALRM, sig_caught)
+        except ValueError, ve:
+            print "Unable to tie SIGALRM to custom method."
 
         led = LED()
         device_name = raw_input('Enter a name for the led: ')

@@ -14,6 +14,7 @@ import argparse
 import time
 import sys
 import socket
+import signal
 import json
 from led import LED
 
@@ -29,6 +30,12 @@ def cleanup():
         led.cleanup()
     if sock is not None:
         sock.close
+
+def status_change(signal, frame):
+    global sock
+    global led
+    if sock is not None and led is not None:
+        sock.sendall(update_status(led))
 
 def interpret_response(reply):
     if reply['result'] == True:
@@ -53,7 +60,9 @@ def execute_command(command,led):
         message = "I do not have a device named: " + command['device_name']
         print message
 
-##    return json.dumps({'result':result,'message':message})
+    return update_status(led)
+
+def update_status(led):
     return json.dumps({'update':{'device_name':led.get_name(), \
     'state':led.get_state()}})
 
@@ -69,14 +78,17 @@ def main():
             automation server", required=True)
         parser.add_argument('-n', help="Unique identifier for this Pi", \
         required=True)
-##        parser.add_argument('-k', help="The key used to authenticate with the home \
-##        automation server", required=True)
+
+        # Setup signal handlers
+        try:
+            signal.signal(signal.SIGALRM, status_change)
+        except ValueError, ve:
+            print "Unable to tie SIGALRM to custom method."
 
         args = parser.parse_args()
 
         host = args.b
         name = args.n
-##        key = args.k
 
         if host is None:
             print("Please supply a host")
@@ -84,9 +96,6 @@ def main():
         if name is None:
             print("Please supply a name")
             sys.exit()
-##        if key is None:
-##            print("Please supply a key")
-##            sys.exit()
 
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -116,11 +125,19 @@ def main():
             cleanup()
             sys.exit()
 
+        sock.setblocking(0)
+        sock.settimeout(5)
+
         try:
             while True:
-                data = sock.recv(4096)
-                result = execute_command(json.loads(data),led)
-                sock.sendall(result)
+                data = None
+                try:
+                    data = sock.recv(4096)
+                    result = execute_command(json.loads(data),led)
+                    sock.sendall(result)
+                except socket.timeout, t:
+                    print "no data received"
+
         except KeyboardInterrupt:
             cleanup()
     except Exception, e:
