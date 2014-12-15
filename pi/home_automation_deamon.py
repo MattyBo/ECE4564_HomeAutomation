@@ -31,11 +31,11 @@ def cleanup():
     if sock is not None:
         sock.close
 
-def status_change(signal, frame):
-    global sock
-    global led
-    if sock is not None and led is not None:
-        sock.sendall(update_status(led))
+##def status_change(signal, frame):
+##    global sock
+##    global led
+##    if sock is not None and led is not None:
+##        sock.sendall(update_status(led))
 
 def interpret_response(reply):
     if reply['result'] == True:
@@ -80,10 +80,10 @@ def main():
         required=True)
 
         # Setup signal handlers
-        try:
-            signal.signal(signal.SIGALRM, status_change)
-        except ValueError, ve:
-            print "Unable to tie SIGALRM to custom method."
+##        try:
+##            signal.signal(signal.SIGALRM, status_change)
+##        except ValueError, ve:
+##            print "Unable to tie SIGALRM to custom method."
 
         args = parser.parse_args()
 
@@ -136,7 +136,7 @@ def main():
                     result = execute_command(json.loads(data),led)
                     sock.sendall(result)
                 except socket.timeout, t:
-                    print "no data received"
+                    sock.sendall(update_status(led))
 
         except KeyboardInterrupt:
             cleanup()
