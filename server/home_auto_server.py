@@ -25,6 +25,7 @@ import csv
 import json
 import sys
 import sqlite3 as lite
+import argparse
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, Factory
 from twisted.web import http, resource
@@ -33,11 +34,21 @@ from twisted.web.static import File
 from autobahn.twisted.websocket import WebSocketServerProtocol, \
                                        WebSocketServerFactory
 
-path = "/tmp/Web_Page"
+parser = argparse.ArgumentParser(description='Transform document into JSON.')
+parser.add_argument('-d', action='store_true', help='Delete pi information when server shuts down')
+parser.add_argument('Web_Page_Directory', type=str, help='Where web page files are stored')
+parser.add_argument('WebSocket_Address', type=str, help='Where WebSocket server will be set up')
+
+args = vars(parser.parse_args())
+print args['Web_Page_Directory']
+print args['WebSocket_Address']
+print args['d']
+
+path = args['Web_Page_Directory']
 name_index = 0
 desc_index = 1
 stat_index = 2
-websocket = WebSocketServerFactory("ws://localhost:9998", debug = False)
+websocket = WebSocketServerFactory(args['WebSocket_Address'], debug = False)
 clients = []
 pi_system = {}
 socket_clients = {}
@@ -45,7 +56,7 @@ con = None
 cur = None
 
 try:
-  con = lite.connect('/home/jtobat/active/home_auto.db')
+  con = lite.connect('/home/ubuntu/home_auto.db')
   cur = con.cursor()
 
 except lite.Error, e:
@@ -120,6 +131,8 @@ class MyServerProtocol(WebSocketServerProtocol):
       else:
          text = payload.decode('utf8')
          command_text = json.loads(text)
+	 print "command text"
+	 print command_text
          if "id" in command_text and \
             "device_name" in command_text and \
             "state" in command_text:
@@ -152,7 +165,7 @@ class QOTD(Protocol):
         con.execute("select name from pi")
         rows = con.fetchall()
         print rows
-        self.transport.write("An apple a day keeps the doctor away\r\n") 
+       # self.transport.write("An apple a day keeps the doctor away\r\n") 
         #self.transport.loseConnection()
     """
     def connectionLost(self, reason):
@@ -189,10 +202,11 @@ class QOTD(Protocol):
               sql = 'INSERT INTO pi VALUES("%s", "", 0)' % pi_name
               print sql
               cur.execute(sql)
-              #con.commit()
+              con.commit()
               new = True
 
             if update or new:
+	      print "update or new"
               self.first = False
               self.name = pi_name
               socket_clients[self.name] = self.transport
@@ -232,7 +246,7 @@ class QOTD(Protocol):
               "print update message"
               print pi_message
           
-            self.transport.write(response)
+           # self.transport.write(response)
 
           if "result" in pi_data:
             print pi_data
@@ -260,4 +274,7 @@ reactor.listenTCP(8000, factory)
 # reactor.listenTCP(8000, TownLookupServer())
 reactor.listenTCP(12345, QOTDFactory())
 # Start Twisted's event loop
-reactor.run()
+try:
+  reactor.run()
+except KeyboardInterrupt:
+  print "OK yeah"

@@ -28,7 +28,7 @@ import json
 
 ex = {}
 
-ex['id'] = "bacon"
+ex['id'] = "test pi"
 ex['devices'] = {}
 
 dev1 = {}
@@ -40,8 +40,8 @@ dev2 = {}
 dev2['description'] = "light"
 dev2['state'] = 1
 
-ex['devices']['devin'] = dev1
-ex['devices']['kevin'] = dev2
+ex['devices']['light1'] = dev1
+ex['devices']['light2'] = dev2
 
 update = {}
 update['update'] = {}
@@ -58,7 +58,7 @@ sock = None
 try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    sock.connect(("127.0.0.1", 12345))
+    sock.connect(("54.174.26.73", 12345))
    
     sent_bytes = 0
     request_buffer = json.dumps(ex)
@@ -82,9 +82,6 @@ try:
 
       while sent_bytes < len(request_buffer):
         sent_bytes += sock.send(request_buffer[sent_bytes:])
-
-      reply = sock.recv(4096)
-      print reply
 
     """
     sent_bytes = 0
