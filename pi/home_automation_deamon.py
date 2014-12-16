@@ -105,13 +105,13 @@ def main():
             print "Problem connecting to host " + se.message
             sys.exit()
 
-        num_devices = raw_input("Enter the number of devices on this pi \
-        (right now this will be 1 no matter what you put):\n")
+##        num_devices = raw_input("Enter the number of devices on this pi \
+##        (right now this will be 1 no matter what you put):\n")
         num_devices = 1
         device_name = raw_input('Enter a name for device' + str(num_devices) + \
-        ':')
+        ': ')
         device_desc = raw_input('Enter a description for device' \
-        + str(num_devices) + ':')
+        + str(num_devices) + ': ')
 
         led = LED()
         led.set_name(device_name)

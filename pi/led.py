@@ -37,12 +37,12 @@ class LED(object):
     def turn_on(self):
         self.state = 1
         GPIO.output(25,True)
-        print("turning light on")
+##        print("Turning light on...")
 
     def turn_off(self):
         self.state= 0
         GPIO.output(25,False)
-        print("turning light off")
+##        print("Turning light off...")
 
     def set_name(self,name):
         self.name = name
