@@ -10,7 +10,7 @@
 #!/usr/bin/env python
 
 import RPi.GPIO as GPIO
-import time
+import signal
 class LED(object):
 
     def __init__(self):
@@ -32,16 +32,17 @@ class LED(object):
             self.turn_off()
         else:
             self.turn_on()
+##        signal.alarm(1)
 
     def turn_on(self):
         self.state = 1
         GPIO.output(25,True)
-        print("turning light on")
+##        print("Turning light on...")
 
     def turn_off(self):
         self.state= 0
         GPIO.output(25,False)
-        print("turning light off")
+##        print("Turning light off...")
 
     def set_name(self,name):
         self.name = name
