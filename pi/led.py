@@ -32,7 +32,7 @@ class LED(object):
             self.turn_off()
         else:
             self.turn_on()
-        signal.alarm(1)
+##        signal.alarm(1)
 
     def turn_on(self):
         self.state = 1
