@@ -83,17 +83,19 @@ img.bulb {
 var ws = new WebSocket("ws://54.174.26.73:9998/");
 var columns = 0;
 var numColumns = 3;
-var pi_info = {}
+var pi_list = {}
 
 function updateDevices(device_info, pi_name){
   var selector = '.bulb.' + pi_name + '[data-device="' + device_info['device_name'] + '"]';
   
-  if(device_info['state'] == pi_info[pi_name]['state']){
+  if(device_info['state'] == pi_list[pi_name]['state']){
     return;
   }
 
   $(selector).attr('src',bulbImage(device_info['state']));
-  pi_info[pi_name]['lock'] = false;
+  pi_list[pi_name]['lock'] = false;
+  pi_list[pi_name]['state'] = device_info['state'];
+//  console.log(pi_list);
 }
 
 function clickBulb(){
@@ -123,7 +125,7 @@ function clickBulb(){
 
   var status = $(selector).html;
 
-  if(status == "Status:inactive" || pi_info[pi_name]['lock'] == true)
+  if(status == "Status:inactive" || pi_list[pi_name]['lock'] == true)
     return;
   else{
     var command = {};
@@ -133,12 +135,11 @@ function clickBulb(){
     console.log(command);
     ws.send(JSON.stringify(command));
     console.log($('#container').html());
-    pi_info[pi_name]['lock'] = true;
-
+    pi_list[pi_name]['lock'] = true;
     if(state == 1){
-      pi_info[pi_name]['state'] = 0;
+      pi_list[pi_name]['state'] = 0;
     }else{
-      pi_info[pi_name]['state'] = 1;
+      pi_list[pi_name]['state'] = 1;
     } 
     
   }
@@ -147,7 +148,7 @@ function clickBulb(){
 function bulbImage(state){
     var src = Number(state);
     var state = 1;
-    console.log(state);
+
     if(src == 1){
       src = "Images/bulb_on.png";
     }else{
@@ -157,8 +158,8 @@ function bulbImage(state){
 }
 
 function updatePi(pi_info, pi_name) {
-  pi_info[pi_name] = {};
-  pi_info[pi_name]['lock'] = false;
+  pi_list[pi_name] = {};
+  pi_list[pi_name]['lock'] = false;
   var name = pi_name.split(' ').join('_');
   var selector = "table." + name;
   $( selector ).empty();
@@ -192,19 +193,19 @@ function updatePi(pi_info, pi_name) {
     var state = pi_info['devices'][device]['state'];
     var src = bulbImage(state);
     console.log(device);
-    pi_info[pi_name]['state'] = state;
+    pi_list[pi_name]['state'] = state;
 
     html+='<tr><th><h2>' + device + '</h2><img src="' +
           src + '" class="bulb ' + name +'" data-device="' 
           + device + '"></th></tr>'; 
   }
-
+//  console.log(pi_list);
   $(selector).append(html);
 }
 
 function addNewPi(pi_info, pi_name) {
-  pi_info[pi_name] = {};
-  pi_info[pi_name]['lock'] = false;
+  pi_list[pi_name] = {};
+  pi_list[pi_name]['lock'] = false;
   var name = pi_name.split(' ').join('_');
   var status = pi_info['status'];
   var statType;
@@ -226,7 +227,7 @@ function addNewPi(pi_info, pi_name) {
   for(var device in pi_info['devices']){
     var state = pi_info['devices'][device]['state'];
     var src = bulbImage(state);
-    pi_info[pi_name]['state'] = state;
+    pi_list[pi_name]['state'] = state;
 
     html+='<tr><th><h2>' + device + '</h2><img src="' +
           src + '" class="bulb ' + name +'" data-device="' 
@@ -234,7 +235,7 @@ function addNewPi(pi_info, pi_name) {
   }
 
   html += '</table>';
-
+ // console.log(pi_list);
   return html;
 
   //$('body').append(html);
@@ -289,8 +290,6 @@ function addNewPi(pi_info, pi_name) {
             columns++;
           }
           else{
-            console.log(html);
-            console.log("wtf");
             $('#container td:last').after(html);
             console.log($('#container').html());
 //append(html);
