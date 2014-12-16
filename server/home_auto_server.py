@@ -33,11 +33,11 @@ from twisted.web.static import File
 from autobahn.twisted.websocket import WebSocketServerProtocol, \
                                        WebSocketServerFactory
 
-path = "/tmp/Web_Page"
+path = "/var/ECE4564_HomeAutomation/Web_Page"
 name_index = 0
 desc_index = 1
 stat_index = 2
-websocket = WebSocketServerFactory("ws://localhost:9998", debug = False)
+websocket = WebSocketServerFactory("ws://54.174.26.37:9998", debug = False)
 clients = []
 pi_system = {}
 socket_clients = {}
@@ -45,7 +45,7 @@ con = None
 cur = None
 
 try:
-  con = lite.connect('/home/jtobat/active/home_auto.db')
+  con = lite.connect('/home/ubuntu/home_auto.db')
   cur = con.cursor()
 
 except lite.Error, e:
@@ -120,6 +120,8 @@ class MyServerProtocol(WebSocketServerProtocol):
       else:
          text = payload.decode('utf8')
          command_text = json.loads(text)
+	 print "command text"
+	 print command_text
          if "id" in command_text and \
             "device_name" in command_text and \
             "state" in command_text:
@@ -152,7 +154,7 @@ class QOTD(Protocol):
         con.execute("select name from pi")
         rows = con.fetchall()
         print rows
-        self.transport.write("An apple a day keeps the doctor away\r\n") 
+       # self.transport.write("An apple a day keeps the doctor away\r\n") 
         #self.transport.loseConnection()
     """
     def connectionLost(self, reason):
@@ -193,6 +195,7 @@ class QOTD(Protocol):
               new = True
 
             if update or new:
+	      print "update or new"
               self.first = False
               self.name = pi_name
               socket_clients[self.name] = self.transport
@@ -232,7 +235,7 @@ class QOTD(Protocol):
               "print update message"
               print pi_message
           
-            self.transport.write(response)
+           # self.transport.write(response)
 
           if "result" in pi_data:
             print pi_data

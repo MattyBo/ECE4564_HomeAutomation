@@ -80,7 +80,7 @@ img.bulb {
 <script src="Scripts/jquery-2.1.1.min.js"></script>
 <script src="Scripts/jquery-ui.min.js"></script>
 <script type="text/javascript">
-var ws = new WebSocket("ws://localhost:9998/");
+var ws = new WebSocket("ws://54.174.26.73:9998/");
 var columns = 0;
 var numColumns = 3;
 
@@ -93,6 +93,7 @@ function updateDevices(device_info, pi_name){
 }
 
 function clickBulb(){
+  console.log("clicked");
   var src = $(this).attr('src');
   var state;
   console.log(src);
@@ -127,6 +128,7 @@ function clickBulb(){
     command['state'] = state;
     console.log(command);
     ws.send(JSON.stringify(command));
+    console.log($('#container').html());
   }
 }
 
@@ -234,10 +236,12 @@ function addNewPi(pi_info, pi_name) {
       var data = JSON.parse(evt.data);
 
       if("new" in data){
+	var html;
         for(var key in data['new']){
-          addNewPi(data['new'][key], key);
+          html = "<td>" + addNewPi(data['new'][key], key) + "</td>";
+          $( '#container td:last' ).after(html);
         }
-
+	
         $('.bulb').click(clickBulb);
         
       }else if("update" in data){
@@ -251,7 +255,6 @@ function addNewPi(pi_info, pi_name) {
             updatePi(updates, key);
             $('.bulb').click(clickBulb);
           }
-
         }
       }else{
         for(var key in data){
