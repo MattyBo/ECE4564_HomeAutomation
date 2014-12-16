@@ -25,6 +25,7 @@ import csv
 import json
 import sys
 import sqlite3 as lite
+import argparse
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, Factory
 from twisted.web import http, resource
@@ -33,11 +34,21 @@ from twisted.web.static import File
 from autobahn.twisted.websocket import WebSocketServerProtocol, \
                                        WebSocketServerFactory
 
-path = "/var/ECE4564_HomeAutomation/Web_Page"
+parser = argparse.ArgumentParser(description='Transform document into JSON.')
+parser.add_argument('-d', action='store_true', help='Delete pi information when server shuts down')
+parser.add_argument('Web_Page_Directory', type=str, help='Where web page files are stored')
+parser.add_argument('WebSocket_Address', type=str, help='Where WebSocket server will be set up')
+
+args = vars(parser.parse_args())
+print args['Web_Page_Directory']
+print args['WebSocket_Address']
+print args['d']
+
+path = args['Web_Page_Directory']
 name_index = 0
 desc_index = 1
 stat_index = 2
-websocket = WebSocketServerFactory("ws://54.174.26.37:9998", debug = False)
+websocket = WebSocketServerFactory(args['WebSocket_Address'], debug = False)
 clients = []
 pi_system = {}
 socket_clients = {}
@@ -191,7 +202,7 @@ class QOTD(Protocol):
               sql = 'INSERT INTO pi VALUES("%s", "", 0)' % pi_name
               print sql
               cur.execute(sql)
-              #con.commit()
+              con.commit()
               new = True
 
             if update or new:
@@ -263,4 +274,7 @@ reactor.listenTCP(8000, factory)
 # reactor.listenTCP(8000, TownLookupServer())
 reactor.listenTCP(12345, QOTDFactory())
 # Start Twisted's event loop
-reactor.run()
+try:
+  reactor.run()
+except KeyboardInterrupt:
+  print "OK yeah"
