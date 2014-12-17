@@ -35,7 +35,7 @@ to complete registering your pi with the home automation server.
 Install Dependencies to Run Server:
 -----------------------------------
 The server requires certain Python packages to be installed, so assuming you are on
-a **Debian** Linux Distrubutuion such as **Ubuntu**, run the commands in the command line below:
+a **Debian** Linux Distribution such as **Ubuntu**, run the commands in the command line below:
 ```
 sudo apt-get install python-twisted
 sudo apt-get install python-pip
@@ -44,13 +44,26 @@ sudo pip install autobahn[twisted]
 sudo apt-get install sqlite3 libsqlite3-dev
 ```
 
+Create the Database:
+--------------------
+After running the commands above, **SQLITE** should be installed. Choose a directory to make a database.
+Then run the commands below:
+```
+sqlite3 database_file_name
+create table pi(name TEXT PRIMARY KEY, description TEXT, status INTEGER)
+.exit
+```
+**database_file_name** can be any name you want it to be. You will need to remember the path and file name
+of the database. The combined path and name of the file will become the **database_location** argument for the
+server which is explained in the next section.
+
 How to run the home_auto_server:
 --------------------------------
 Inside the **server** folder is the actual server. To run it use the command below:
 ```
 sudo ./home_auto_server.py database_location web_page_location websocket_host
 ```
-* The **database_location** is where your database file is located e.g. /home/ubuntu/home_auto.db
+* The **database_location** is where your database file is located as chosen above e.g. /home/ubuntu/home_auto.db
 * The **web_page_location** is where the web page files are stored (the root) e.g. /home/ubuntu/Web_Page
 * The **websocket_host** is a websocket URL (port 9998) where the web pages will connect to your server e.g. ws://localhost:9998
 
