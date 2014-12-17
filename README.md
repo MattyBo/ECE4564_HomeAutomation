@@ -32,6 +32,18 @@ sudo python home_automation_deamon.py -b [ IP address ] -n [ Unique name ]
 After the deamon has successfully connected to the server, follow the prompts
 to complete registering your pi with the home automation server.
 
+Install Dependencies to Run Server:
+-----------------------------------
+The server requires certain Python packages to be installed, so assuming you are on
+a **Debian** Linux Distrubutuion such as **Ubuntu**, run the commands in the command line below:
+```
+sudo apt-get install python-twisted
+sudo apt-get install python-pip
+sudo pip install --no-use-wheel --upgrade distribute
+sudo pip install autobahn[twisted]
+sudo apt-get install sqlite3 libsqlite3-dev
+```
+
 How to run the home_auto_server:
 --------------------------------
 Inside the **server** folder is the actual server. To run it use the command below:
@@ -41,3 +53,21 @@ sudo ./home_auto_server.py database_location web_page_location websocket_host
 * The **database_location** is where your database file is located e.g. /home/ubuntu/home_auto.db
 * The **web_page_location** is where the web page files are stored (the root) e.g. /home/ubuntu/Web_Page
 * The **websocket_host** is a websocket URL (port 9998) where the web pages will connect to your server e.g. ws://localhost:9998
+
+Use the **-h** option to get help from the command line.
+
+How to use the web page:
+------------------------
+After the server is up and running, the web page can be accessed by typing in the URL of the computer where you are running your script, or through localhost at port 8000.
+To access the page from localhost for example type in the following below into a browser:
+```
+http://localhost:8000
+```
+To properly configure the page, there is one line of javascript must be changed. In the **index.html** file inside the **Web_Page** folder, line **83** which is show below:
+```
+var ws = new WebSocket("ws://54.174.26.73:9998")
+```
+Must be changed so that the value inside the parenthesis is equal to **websocket_host**, so the new line should be:
+```
+var ws = new WebSocket("websocket_host")
+```
