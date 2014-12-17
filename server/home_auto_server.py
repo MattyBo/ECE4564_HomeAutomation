@@ -34,28 +34,28 @@ from twisted.web.static import File
 from autobahn.twisted.websocket import WebSocketServerProtocol, \
                                        WebSocketServerFactory
 
+# Sets up locations/URLs needed for server to operate
 parser = argparse.ArgumentParser(description='Home Automation Server')
 parser.add_argument('Database_Location', type=str, help='Where database is stored')
 parser.add_argument('Web_Page_Directory', type=str, help='Where web page files are stored')
 parser.add_argument('WebSocket_Address', type=str, help='Where WebSocket server will be set up')
 
+# Constants needed for server to operate
 args = vars(parser.parse_args())
-print args['Web_Page_Directory']
-print args['WebSocket_Address']
-print args['Database_Location']
-
-path = args['Web_Page_Directory']
+path = args['Web_Page_Directory'] # Directory of web page to serve
+# Index locations of database, needed to parse table
 name_index = 0
 desc_index = 1
 stat_index = 2
-websocket = WebSocketServerFactory(args['WebSocket_Address'], debug = False)
-clients = []
-pi_system = {}
-socket_clients = {}
+websocket = WebSocketServerFactory(args['WebSocket_Address'], debug = False) # WebSocket server setup
+clients = [] # List used to hold websocket clients
+pi_system = {} # Keeps track of connected Pis/devices
+socket_clients = {} # Keeps track of Pi's connected to server, used to send messages back
 con = None
 cur = None
 database = args['Database_Location']
 
+# Tries to load stored Pi information in database
 try:
   con = lite.connect(database)
   cur = con.cursor()
@@ -68,6 +68,12 @@ except lite.Error, e:
   print "Database Error %s:" % e.args[0]
   sys.exit(1)
 
+# Generates a json message to be sent either to a websocket or pi client
+# name = name of Raspberry Pi
+# devices = list of devices along with their status
+# new = true if a new Raspberry Pi, false if just an update
+# state = current state of Pi, 0 if inactive, 1 if active
+# pi_update = true if an existing pi is being updated
 def pi_status(name, devices, new, state=None, pi_update=False):
   new_message = {}
   status = None
@@ -84,15 +90,14 @@ def pi_status(name, devices, new, state=None, pi_update=False):
     new_message[status][name] = {}
     new_message[status][name]['devices'] = devices
     new_message[status][name]['status'] = state
-    print "updated pi"
-    print new_message
   else:
     new_message[status][name]['device_name'] = devices
     new_message[status][name]['state'] = state
     
-  #new_message[status]['id'] = name
   return json.dumps(new_message)
-  
+
+# Send a message to all websocket clients.
+# Message must be in the correct format first.
 def broadcast(message):
   global clients
   if len(clients) > 0:
@@ -100,6 +105,10 @@ def broadcast(message):
       c.sendMessage(message)
   return
 
+# Creates standard response message.
+# result = true if message recieved/responded to
+# was correct.
+# message = error message if result is false.
 def result(result, message=""):
   result_message = {}
   result_message['result'] = result
@@ -107,6 +116,9 @@ def result(result, message=""):
   
   return json.dumps(result_message)
 
+# Creates a standard command message.
+# name = name of pi
+# state = state of light, 1 = on, 0 = off
 def command(name, state):
     cmd = {}
     cmd['device_name'] = name
@@ -114,26 +126,28 @@ def command(name, state):
     
     return json.dumps(cmd)
 
+# WebSocket Protocol
 class MyServerProtocol(WebSocketServerProtocol):
-
+   # Appends client information to list when
+   # a connection is made
    def onConnect(self, request):
       global clients
       clients.append(self)
       print("Client connecting: {0}".format(request.peer))
 
+   # Sends all Pi information to website when the web page first connects
    def onOpen(self):
       print("WebSocket connection open.")
       print pi_system
       self.sendMessage(json.dumps(pi_system))
-
+  
+   # Handles messages coming from web page clients
    def onMessage(self, payload, isBinary):
       if isBinary:
          print("Binary message received: {0} bytes".format(len(payload)))
       else:
          text = payload.decode('utf8')
          command_text = json.loads(text)
-	 print "command text"
-	 print command_text
          if "id" in command_text and \
             "device_name" in command_text and \
             "state" in command_text:
@@ -148,6 +162,7 @@ class MyServerProtocol(WebSocketServerProtocol):
       ## echo back message verbatim
       #self.sendMessage(payload, isBinary)
 
+   # Removes client from list when connection is closed
    def onClose(self, wasClean, code, reason):
       global clients
       for c in clients:
@@ -156,6 +171,8 @@ class MyServerProtocol(WebSocketServerProtocol):
           #print "client removed"
       print("WebSocket connection closed: {0}".format(reason))
 
+# Handles connects from Raspberry Pis.
+# A custom TCP socket protocol.
 class PiHandler(Protocol):
     def __init__(self):
         self.first = True
@@ -169,6 +186,7 @@ class PiHandler(Protocol):
        # self.transport.write("An apple a day keeps the doctor away\r\n") 
         #self.transport.loseConnection()
     """
+    # Deals with Pi disconnection
     def connectionLost(self, reason):
         #self.factory.numProtocols = self.factory.numProtocols - 1
         print "connect lost"
@@ -179,9 +197,13 @@ class PiHandler(Protocol):
         print update
         broadcast(update)
 
+    # Deals with messages sent from Pis
     def dataReceived(self, data):
         global pi_system
         pi_data = json.loads(data)
+        # Sends a response to a Pi's attempt register.
+        # Sends an error if an active Pi has the name
+        # that the current pi is trying to register with.
         if self.first:
           #con.execute("select name from pi")
           #rows = con.fetchall()
@@ -207,7 +229,6 @@ class PiHandler(Protocol):
               new = True
 
             if update or new:
-	      print "update or new"
               self.first = False
               self.name = pi_name
               socket_clients[self.name] = self.transport
@@ -220,8 +241,6 @@ class PiHandler(Protocol):
                 pi_message = pi_status(pi_name, pi_data['devices'], False, 1, True)
   
               broadcast(pi_message)
-              print "pi_message"
-              print pi_message
               response = result(True)
               self.transport.write(response) 
         else:
@@ -244,11 +263,7 @@ class PiHandler(Protocol):
               pi_message = pi_status(self.name, device_name, False, state)
               broadcast(pi_message)
               response = result(True)
-              "print update message"
-              print pi_message
           
-           # self.transport.write(response)
-
           if "result" in pi_data:
             print pi_data
         
@@ -275,7 +290,4 @@ reactor.listenTCP(8000, factory)
 # reactor.listenTCP(8000, TownLookupServer())
 reactor.listenTCP(12345, PiHandlerFactory())
 # Start Twisted's event loop
-try:
-  reactor.run()
-except KeyboardInterrupt:
-  print "OK yeah"
+reactor.run()
