@@ -34,15 +34,15 @@ from twisted.web.static import File
 from autobahn.twisted.websocket import WebSocketServerProtocol, \
                                        WebSocketServerFactory
 
-parser = argparse.ArgumentParser(description='Transform document into JSON.')
-parser.add_argument('-d', action='store_true', help='Delete pi information when server shuts down')
+parser = argparse.ArgumentParser(description='Home Automation Server')
+parser.add_argument('Database_Location', type=str, help='Where database is stored')
 parser.add_argument('Web_Page_Directory', type=str, help='Where web page files are stored')
 parser.add_argument('WebSocket_Address', type=str, help='Where WebSocket server will be set up')
 
 args = vars(parser.parse_args())
 print args['Web_Page_Directory']
 print args['WebSocket_Address']
-print args['d']
+print args['Database_Location']
 
 path = args['Web_Page_Directory']
 name_index = 0
@@ -54,9 +54,10 @@ pi_system = {}
 socket_clients = {}
 con = None
 cur = None
+database = args['Database_Location']
 
 try:
-  con = lite.connect('/home/ubuntu/home_auto.db')
+  con = lite.connect(database)
   cur = con.cursor()
 
 except lite.Error, e:
@@ -155,7 +156,7 @@ class MyServerProtocol(WebSocketServerProtocol):
           #print "client removed"
       print("WebSocket connection closed: {0}".format(reason))
 
-class QOTD(Protocol):
+class PiHandler(Protocol):
     def __init__(self):
         self.first = True
         self.name = None
@@ -252,9 +253,9 @@ class QOTD(Protocol):
             print pi_data
         
 
-class QOTDFactory(Factory):
+class PiHandlerFactory(Factory):
     def buildProtocol(self, addr):
-        return QOTD()
+        return PiHandler()
 
 cur.execute("select * from pi")
 
@@ -272,7 +273,7 @@ websocket.protocol = MyServerProtocol
 reactor.listenTCP(9998, websocket)
 reactor.listenTCP(8000, factory)
 # reactor.listenTCP(8000, TownLookupServer())
-reactor.listenTCP(12345, QOTDFactory())
+reactor.listenTCP(12345, PiHandlerFactory())
 # Start Twisted's event loop
 try:
   reactor.run()
